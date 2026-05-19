@@ -37,10 +37,10 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Spark014/agy-mcp.git"
+    "url": "git+https://github.com/Walapalam/agy-mcp.git"
   },
   "bugs": {
-    "url": "https://github.com/Spark014/agy-mcp/issues"
+    "url": "https://github.com/Walapalam/agy-mcp/issues"
   },
-  "homepage": "https://github.com/Spark014/agy-mcp#readme"
+  "homepage": "https://github.com/Walapalam/agy-mcp#readme"
 }

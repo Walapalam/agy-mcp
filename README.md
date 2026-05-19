@@ -148,6 +148,6 @@ MIT
 
 ## Author
 
-Raqeeb M. ([@Spark014](https://github.com/Spark014))
+Raqeeb M. ([@Walapalam](https://github.com/Walapalam))
 
 Built with ❤️ at [Kawn Labs](https://github.com/Kawn-Labs)
