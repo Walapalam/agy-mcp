@@ -20,6 +20,57 @@ const SERVER_VERSION = "1.0.0";
 const debugMode = process.env.AGY_MCP_DEBUG === 'true';
 const DEFAULT_AGY_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes
 
+/**
+ * Load tool description from markdown file.
+ * Priority: AGY_MCP_DESCRIPTION_PATH env var → built-in description.md → hardcoded fallback
+ */
+function loadToolDescription(): string {
+  // 1. Check env var for custom description file
+  const customPath = process.env.AGY_MCP_DESCRIPTION_PATH;
+  if (customPath) {
+    if (existsSync(customPath)) {
+      try {
+        const desc = readFileSync(customPath, 'utf8');
+        debugLog(`[Debug] Loaded custom description from ${customPath}`);
+        return desc;
+      } catch (err) {
+        console.error(`[Warning] Failed to read AGY_MCP_DESCRIPTION_PATH (${customPath}):`, err);
+      }
+    } else {
+      console.warn(`[Warning] AGY_MCP_DESCRIPTION_PATH set but file not found: ${customPath}`);
+    }
+  }
+
+  // 2. Check built-in description.md next to the script
+  try {
+    const scriptDir = path.dirname(fileURLToPath(import.meta.url));
+    const builtInPath = path.resolve(scriptDir, '..', 'description.md');
+    if (existsSync(builtInPath)) {
+      const desc = readFileSync(builtInPath, 'utf8');
+      debugLog(`[Debug] Loaded built-in description from ${builtInPath}`);
+      return desc;
+    }
+  } catch {
+    // ignore — might be bundled
+  }
+
+  // 3. Fallback hardcoded description
+  return `Antigravity Code Agent: Your versatile AI assistant powered by Google Gemini. Use \\`workFolder\\` for contextual execution.
+
+• File ops: Create, read, edit, list files, analyze images
+• Code: Generate, analyze, refactor, fix bugs
+• Web search + summarise content
+• Design: Generate images, UI mockups, visual assets
+• Multi-step workflows
+
+**Prompt tips**
+1. Be concise and explicit for complex tasks.
+2. For multi-line text, write to a temp file in the project root, use it, then delete it.
+3. If you get a timeout, split the task into smaller steps.
+4. If workFolder is set, use relative paths for files.
+`;
+}
+
 function debugLog(message?: any, ...optionalParams: any[]): void {
   if (debugMode) {
     console.error(message, ...optionalParams);
@@ -222,24 +273,13 @@ export class AgyMcpServer {
   }
 
   private setupToolHandlers(): void {
+    const toolDescription = loadToolDescription();
+
     this.server.setRequestHandler(ListToolsRequestSchema, async () => ({
       tools: [
         {
           name: 'antigravity_code',
-          description: `Antigravity Code Agent: Your versatile AI assistant powered by Google Gemini. Use \`workFolder\` for contextual execution.
-
-• File ops: Create, read, edit, list files, analyze images
-• Code: Generate, analyze, refactor, fix bugs
-• Web search + summarise content
-• Design: Generate images, UI mockups, visual assets
-• Multi-step workflows
-
-**Prompt tips**
-1. Be concise and explicit for complex tasks.
-2. For multi-line text, write to a temp file in the project root, use it, then delete it.
-3. If you get a timeout, split the task into smaller steps.
-4. If workFolder is set, use relative paths for files.
-`,
+          description: toolDescription,
           inputSchema: {
             type: 'object',
             properties: {

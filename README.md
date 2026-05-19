@@ -203,6 +203,59 @@ Then reference it in the MCP call:
 }
 ```
 
+## Customizing the Tool Description
+
+The `antigravity_code` tool description is loaded dynamically from a markdown file. This allows you to customize how the tool appears to your MCP client (Claude Desktop, OpenClaw, etc.).
+
+### How it works
+
+1. **Default**: The server looks for `description.md` in the project root
+2. **Custom**: Set `AGY_MCP_DESCRIPTION_PATH` to point to your own description file
+
+### Custom description file example
+
+Create `my-description.md`:
+
+```markdown
+# My Custom Antigravity Agent
+
+Specialized for mobile app development with Flutter and Dart.
+
+### Expertise
+- Flutter UI/UX design and implementation
+- Dart code generation and refactoring
+- Image generation for app assets and mockups
+- State management with Riverpod
+
+### Workflow
+1. Always generate test files alongside implementation
+2. Follow the project's existing architecture patterns
+3. Use relative paths when workFolder is set
+```
+
+### Usage
+
+```bash
+# Set custom description via env var
+AGY_MCP_DESCRIPTION_PATH=/path/to/my-description.md agy-mcp
+
+# Or in MCP config
+{
+  "mcpServers": {
+    "antigravity": {
+      "command": "npx",
+      "args": ["-y", "agy-mcp@latest"],
+      "transport": "stdio",
+      "env": {
+        "AGY_MCP_DESCRIPTION_PATH": "/path/to/my-description.md"
+      }
+    }
+  }
+}
+```
+
+The description file is read once at server startup. Restart the server after editing.
+
 ## Environment Variables
 
 | Variable | Description |
@@ -212,6 +265,7 @@ Then reference it in the MCP call:
 | `AGY_MCP_DEBUG` | Set to `true` for verbose stderr logging |
 | `AGY_MCP_TIMEOUT_MS` | Command timeout in milliseconds (default: 600000 = 10min) |
 | `AGY_MCP_SESSION_FILE` | Custom session mapping file path |
+| `AGY_MCP_DESCRIPTION_PATH` | Custom tool description markdown file path |
 
 ## Comparison: agy-mcp vs claude-code-mcp
 
