@@ -1,0 +1,46 @@
+{
+  "name": "agy-mcp",
+  "version": "1.0.0",
+  "description": "MCP server for Antigravity CLI (agy) - one-shot execution with session persistence",
+  "author": "Raqeeb M. (Spark014)",
+  "license": "MIT",
+  "main": "dist/server.js",
+  "bin": {
+    "agy-mcp": "dist/server.js"
+  },
+  "scripts": {
+    "build": "npx tsc",
+    "start": "node dist/server.js",
+    "dev": "npx tsx src/server.ts",
+    "test": "npm run build && npx vitest"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.11.2",
+    "zod": "^3.24.4"
+  },
+  "type": "module",
+  "devDependencies": {
+    "@types/node": "^22.19.19",
+    "tsx": "^4.22.3",
+    "typescript": "^5.9.3",
+    "vitest": "^2.1.9"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "antigravity",
+    "agy",
+    "gemini",
+    "ai",
+    "llm",
+    "tools"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Spark014/agy-mcp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Spark014/agy-mcp/issues"
+  },
+  "homepage": "https://github.com/Spark014/agy-mcp#readme"
+}
