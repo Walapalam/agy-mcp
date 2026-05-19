@@ -10,6 +10,8 @@ Expose Google's Antigravity agent (powered by Gemini) as an MCP tool for any MCP
 
 - **One-shot execution**: Send a prompt, get a response
 - **Session persistence**: Reuse the same `agy` conversation across multiple tool calls via `sessionId`
+- **Auto-continue**: Automatically resume the most recent `agy` conversation with `autoContinue: true`
+- **Prompt files**: Reference long prompts from files via `promptFile` path
 - **Any MCP client**: Works with anything that speaks the MCP protocol over stdio
 
 ## Install
@@ -62,11 +64,17 @@ Add to your MCP config:
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `prompt` | string | ✅ | The natural language task |
+| `prompt` | string | ❌* | The natural language task (or use `promptFile`) |
+| `promptFile` | string | ❌* | Path to a file containing the prompt. Useful for long prompts or image generation workflows |
 | `workFolder` | string | ❌ | Absolute path to working directory |
 | `sessionId` | string | ❌ | Reuse the same agy conversation across calls |
+| `autoContinue` | boolean | ❌ | Continue the most recent agy conversation (equivalent to `agy -c`) |
 
-### Example Call
+\* *Either `prompt` or `promptFile` is required.*
+
+### Example Calls
+
+#### Simple one-shot
 
 ```json
 {
@@ -77,14 +85,63 @@ Add to your MCP config:
     "name": "antigravity_code",
     "arguments": {
       "prompt": "Generate a Flutter onboarding screen design",
-      "workFolder": "/Users/me/projects/myapp",
-      "sessionId": "design-task-001"
+      "workFolder": "/Users/me/projects/myapp"
     }
   }
 }
 ```
 
-## Session Persistence
+#### Using a prompt file (for long prompts or image generation)
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "tools/call",
+  "params": {
+    "name": "antigravity_code",
+    "arguments": {
+      "promptFile": "/Users/me/prompts/image-generation.txt",
+      "workFolder": "/Users/me/projects/myapp"
+    }
+  }
+}
+```
+
+#### Auto-continue last session (`agy -c`)
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "tools/call",
+  "params": {
+    "name": "antigravity_code",
+    "arguments": {
+      "prompt": "Iterate on the design — make the background darker",
+      "workFolder": "/Users/me/projects/myapp",
+      "autoContinue": true
+    }
+  }
+}
+```
+
+#### Session persistence
+
+```json
+// Call 1: Start a design task
+{"prompt": "Design a splash screen...", "sessionId": "design-001"}
+
+// Call 2: Iterate on the same design
+{"prompt": "Make the background darker...", "sessionId": "design-001"}
+
+// Call 3: Export assets
+{"prompt": "Export all assets to assets/ folder", "sessionId": "design-001"}
+```
+
+## Session Management
+
+### Session Persistence (`sessionId`)
 
 Pass the same `sessionId` across multiple calls to resume the same `agy` conversation:
 
@@ -100,6 +157,51 @@ Pass the same `sessionId` across multiple calls to resume the same `agy` convers
 ```
 
 Session mappings are stored in `~/.config/agy-mcp/sessions.json`.
+
+### Auto-Continue (`autoContinue`)
+
+Set `autoContinue: true` to automatically resume the most recent `agy` conversation (equivalent to running `agy -c`):
+
+```json
+{
+  "prompt": "Continue working on the design from last time",
+  "autoContinue": true
+}
+```
+
+This is useful when:
+- You don't know or care about the specific session ID
+- You want to pick up exactly where you left off
+- You're iterating on the last task
+
+**Note:** `autoContinue` takes precedence over `sessionId`. When `autoContinue` is `true`, `sessionId` is ignored.
+
+### Prompt Files (`promptFile`)
+
+For long prompts (e.g., detailed image generation descriptions), save the prompt to a file and reference it:
+
+```bash
+# Create a prompt file
+cat > /tmp/image-prompt.txt << 'EOF'
+Generate a mobile onboarding screen for an Islamic daily reflection app.
+Use earthy tones, Islamic geometric patterns, and elegant Arabic calligraphy.
+The screen should have:
+- A large crescent moon and star icon at the top
+- The app name "DeenScrolling" in elegant serif font
+- A subtle geometric pattern background in deep teal (#0D4D4D)
+- Two call-to-action buttons: "Get Started" and "Learn More"
+- Soft ambient lighting from the bottom
+EOF
+```
+
+Then reference it in the MCP call:
+
+```json
+{
+  "promptFile": "/tmp/image-prompt.txt",
+  "workFolder": "/Users/me/projects/myapp"
+}
+```
 
 ## Environment Variables
 
@@ -118,15 +220,17 @@ Session mappings are stored in `~/.config/agy-mcp/sessions.json`.
 | **Backend** | Google Gemini (via Antigravity) | Anthropic Claude |
 | **Strengths** | Design, image generation, web tools | Deep reasoning, complex refactoring |
 | **Output format** | Plain text | JSON + text |
-| **Session mode** | `--conversation=<id>` | `--resume=<id>` |
+| **Session mode** | `--conversation=<id>` or `--continue` | `--resume=<id>` |
 | **Permissions** | `--dangerously-skip-permissions` | `--dangerously-skip-permissions` |
+| **Prompt files** | ✅ `promptFile` parameter | ❌ |
+| **Auto-continue** | ✅ `autoContinue: true` (like `agy -c`) | ❌ |
 
 Use both in the same MCP client for a **dual-agent comparison workflow**.
 
 ## Development
 
 ```bash
-git clone https://github.com/Spark014/agy-mcp.git
+git clone https://github.com/Walapalam/agy-mcp.git
 cd agy-mcp
 npm install
 npm run dev    # Run with tsx (auto-reload)

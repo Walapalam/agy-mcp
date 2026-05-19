@@ -62,9 +62,11 @@ export function findAgyCli(): string {
 }
 
 interface AgyCodeArgs {
-  prompt: string;
+  prompt?: string;
+  promptFile?: string;
   workFolder?: string;
   sessionId?: string;
+  autoContinue?: boolean;
 }
 
 interface SessionEntry {
@@ -243,7 +245,11 @@ export class AgyMcpServer {
             properties: {
               prompt: {
                 type: 'string',
-                description: 'The detailed natural language prompt for the agent to execute.',
+                description: 'The detailed natural language prompt for the agent to execute. Either prompt or promptFile is required.',
+              },
+              promptFile: {
+                type: 'string',
+                description: 'Path to a file containing the prompt. Useful for long prompts or image generation workflows. Either prompt or promptFile is required.',
               },
               workFolder: {
                 type: 'string',
@@ -253,8 +259,12 @@ export class AgyMcpServer {
                 type: 'string',
                 description: 'Parent session ID. When provided, repeated calls resume the same agy conversation.',
               },
+              autoContinue: {
+                type: 'boolean',
+                description: 'When true, automatically continue the most recent agy conversation (equivalent to agy -c). Ignores sessionId.',
+              },
             },
-            required: ['prompt'],
+            required: [],
           },
         },
       ],
@@ -271,26 +281,49 @@ export class AgyMcpServer {
       }
 
       const toolArguments = args.params.arguments;
-      let prompt: string;
+      let prompt: string | undefined;
 
-      if (
-        toolArguments &&
-        typeof toolArguments === 'object' &&
-        'prompt' in toolArguments &&
-        typeof toolArguments.prompt === 'string'
-      ) {
-        prompt = toolArguments.prompt;
-      } else {
-        throw new McpError(ErrorCode.InvalidParams, 'Missing required parameter: prompt');
+      // Handle promptFile
+      if (toolArguments && typeof toolArguments === 'object' && 'promptFile' in toolArguments) {
+        if (typeof toolArguments.promptFile === 'string') {
+          const promptFilePath = pathResolve(toolArguments.promptFile);
+          if (existsSync(promptFilePath)) {
+            try {
+              prompt = readFileSync(promptFilePath, 'utf8');
+              debugLog(`[Debug] Read prompt from file: ${promptFilePath} (${prompt.length} chars)`);
+            } catch (err) {
+              throw new McpError(ErrorCode.InvalidParams, `Failed to read promptFile: ${promptFilePath}`);
+            }
+          } else {
+            throw new McpError(ErrorCode.InvalidParams, `promptFile does not exist: ${promptFilePath}`);
+          }
+        } else {
+          throw new McpError(ErrorCode.InvalidParams, 'Invalid parameter: promptFile must be a string.');
+        }
       }
 
-      const sessionId = toolArguments.sessionId;
+      // Handle prompt (direct string)
+      if (!prompt && toolArguments && typeof toolArguments === 'object' && 'prompt' in toolArguments) {
+        if (typeof toolArguments.prompt === 'string') {
+          prompt = toolArguments.prompt;
+        } else {
+          throw new McpError(ErrorCode.InvalidParams, 'Invalid parameter: prompt must be a string.');
+        }
+      }
+
+      if (!prompt) {
+        throw new McpError(ErrorCode.InvalidParams, 'Missing required parameter: prompt or promptFile');
+      }
+
+      const sessionId = toolArguments?.sessionId;
       if (sessionId !== undefined && typeof sessionId !== 'string') {
         throw new McpError(ErrorCode.InvalidParams, 'Invalid parameter: sessionId must be a string.');
       }
 
+      const autoContinue = toolArguments?.autoContinue === true;
+
       let effectiveCwd = homedir();
-      if (toolArguments.workFolder && typeof toolArguments.workFolder === 'string') {
+      if (toolArguments?.workFolder && typeof toolArguments.workFolder === 'string') {
         const resolvedCwd = pathResolve(toolArguments.workFolder);
         if (existsSync(resolvedCwd)) {
           effectiveCwd = resolvedCwd;
@@ -308,14 +341,23 @@ export class AgyMcpServer {
           '--dangerously-skip-permissions',
         ];
 
-        const useSessionContinuity = typeof sessionId === 'string' && sessionId.length > 0;
-        let existingConversationId: string | undefined;
+        // Handle autoContinue (-c flag)
+        if (autoContinue) {
+          agyProcessArgs.push('--continue');
+          debugLog('[Debug] Using auto-continue (--continue flag)');
+        }
 
-        if (useSessionContinuity) {
-          existingConversationId = getSessionMapping(sessionId);
-          if (existingConversationId) {
-            agyProcessArgs.push(`--conversation=${existingConversationId}`);
-            debugLog(`[Debug] Resuming agy conversation: ${existingConversationId}`);
+        // Handle sessionId-based session continuity (only if not autoContinue)
+        if (!autoContinue) {
+          const useSessionContinuity = typeof sessionId === 'string' && sessionId.length > 0;
+          let existingConversationId: string | undefined;
+
+          if (useSessionContinuity) {
+            existingConversationId = getSessionMapping(sessionId);
+            if (existingConversationId) {
+              agyProcessArgs.push(`--conversation=${existingConversationId}`);
+              debugLog(`[Debug] Resuming agy conversation: ${existingConversationId}`);
+            }
           }
         }
 
@@ -336,7 +378,7 @@ export class AgyMcpServer {
 
         const combinedOutput = stdout + '\n' + stderr;
         const conversationId = parseConversationId(combinedOutput);
-        if (conversationId && useSessionContinuity) {
+        if (conversationId && !autoContinue && typeof sessionId === 'string' && sessionId.length > 0) {
           setSessionMapping(sessionId, conversationId);
           debugLog(`[Debug] Saved session mapping: ${sessionId} -> ${conversationId}`);
         }
