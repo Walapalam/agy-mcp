@@ -267,19 +267,20 @@ The description file is read once at server startup. Restart the server after ed
 | `AGY_MCP_SESSION_FILE` | Custom session mapping file path |
 | `AGY_MCP_DESCRIPTION_PATH` | Custom tool description markdown file path |
 
-## Comparison: agy-mcp vs claude-code-mcp
+## Ecosystem
+
+`agy-mcp` is inspired by and complementary to [claude-code-mcp](https://github.com/steipete/claude-code-mcp) by [Peter Steinberger](https://github.com/steipete). Both projects share the same goal: bringing powerful AI coding agents into the MCP ecosystem so they can be composed with other tools.
 
 | | agy-mcp | claude-code-mcp |
 |---|---|---|
-| **Backend** | Google Gemini (via Antigravity) | Anthropic Claude |
-| **Strengths** | Design, image generation, web tools | Deep reasoning, complex refactoring |
-| **Output format** | Plain text | JSON + text |
-| **Session mode** | `--conversation=<id>` or `--continue` | `--resume=<id>` |
-| **Permissions** | `--dangerously-skip-permissions` | `--dangerously-skip-permissions` |
-| **Prompt files** | ✅ `promptFile` parameter | ❌ |
-| **Auto-continue** | ✅ `autoContinue: true` (like `agy -c`) | ❌ |
+| **AI Provider** | Google Gemini (via Antigravity) | Anthropic Claude |
+| **Best For** | Design, image generation, web tools | Deep reasoning, complex refactoring |
+| **Session Mode** | `--conversation=<id>` or `--continue` | `--resume=<id>` |
 
-Use both in the same MCP client for a **dual-agent comparison workflow**.
+Use both together in the same MCP client for a **multi-provider workflow**:
+- Claude for architecture and refactoring
+- Gemini for design assets and image generation
+- Both accessible from the same orchestrator agent
 
 ## Development
 
@@ -292,14 +293,6 @@ npm run build  # Compile to dist/
 npm test       # Run tests
 ```
 
-## Why This Exists
-
-The [claude-code-mcp](https://github.com/steipete/claude-code-mcp) project proved MCP servers for coding agents are useful. But it only covers Claude. `agy-mcp` adds Google's Antigravity/Gemini to the same ecosystem, enabling:
-
-- **Dual-agent comparison**: Run the same prompt on Claude + Gemini, compare outputs
-- **Specialized delegation**: Claude for code, Gemini for design/images
-- **Redundancy**: If one provider is down, the other handles the task
-
 ## License
 
 MIT
@@ -309,3 +302,5 @@ MIT
 Raqeeb M. ([@Walapalam](https://github.com/Walapalam))
 
 Built with ❤️ at [Kawn Labs](https://github.com/Kawn-Labs)
+
+**Credits:** Inspired by [claude-code-mcp](https://github.com/steipete/claude-code-mcp) — thank you [Peter Steinberger](https://github.com/steipete) for pioneering the CLI-to-MCP bridge pattern.
