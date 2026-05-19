@@ -267,20 +267,29 @@ The description file is read once at server startup. Restart the server after ed
 | `AGY_MCP_SESSION_FILE` | Custom session mapping file path |
 | `AGY_MCP_DESCRIPTION_PATH` | Custom tool description markdown file path |
 
-## Ecosystem
+## Acknowledgements
 
-`agy-mcp` is inspired by and complementary to [claude-code-mcp](https://github.com/steipete/claude-code-mcp) by [Peter Steinberger](https://github.com/steipete). Both projects share the same goal: bringing powerful AI coding agents into the MCP ecosystem so they can be composed with other tools.
+This project was directly inspired by [claude-code-mcp](https://github.com/steipete/claude-code-mcp) by [Peter Steinberger](https://github.com/steipete). I saw the idea of wrapping a CLI coding agent as an MCP server and thought: *"That's brilliant — I want the same thing for Antigravity/Gemini."*
 
-| | agy-mcp | claude-code-mcp |
-|---|---|---|
-| **AI Provider** | Google Gemini (via Antigravity) | Anthropic Claude |
-| **Best For** | Design, image generation, web tools | Deep reasoning, complex refactoring |
-| **Session Mode** | `--conversation=<id>` or `--continue` | `--resume=<id>` |
+So `agy-mcp` is not a competitor. It's a **sibling project** that applies the same pattern to a different AI provider. Same architecture, same goals, different backend.
 
-Use both together in the same MCP client for a **multi-provider workflow**:
-- Claude for architecture and refactoring
-- Gemini for design assets and image generation
-- Both accessible from the same orchestrator agent
+**Thank you, Peter** — for proving this pattern works and making the MCP ecosystem richer.
+
+### Using Both Together
+
+Since both are MCP servers, you can wire them into the same client:
+
+| Tool | Best For |
+|------|----------|
+| `claude_code` (via claude-code-mcp) | Architecture, deep refactoring, complex reasoning |
+| `antigravity_code` (via agy-mcp) | Design, image generation, web search, quick iteration |
+
+Example workflow:
+1. Ask `claude_code` to design the component architecture
+2. Ask `antigravity_code` to generate the onboarding image assets
+3. Ask `claude_code` to wire the assets into the Flutter code
+
+Same orchestrator, two specialized agents. That's the power of MCP.
 
 ## Development
 
